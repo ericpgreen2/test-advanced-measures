@@ -1,0 +1,55 @@
+# Dashboard YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
+
+type: metrics_view
+title: AdBids with advanced measures
+table: AdBids
+timeseries: timestamp
+dimensions:
+  - label: Publisher
+    column: publisher
+  - label: Domain
+    column: domain
+
+measures:
+  - name: total_records
+    label: Total records
+    expression: COUNT(*)
+    format_preset: humanize
+    valid_percent_of_total: true
+
+  - name: bid_price
+    label: Sum of Bid Price
+    expression: SUM(bid_price)
+    format_preset: humanize
+    valid_percent_of_total: true
+
+  - name: bid_price_lag
+    label: Bid Price Lag
+    expression: "bid_price - LAG(bid_price)"
+    window: true
+    requires: [bid_price, timestamp]
+    valid_percent_of_total: true
+
+  - name: bid_price_percent_total
+    label: Bid Price Percent of Total
+    expression: bid_price/SUM(bid_price)
+    window:
+      partition: false
+    requires: [bid_price]
+    format_preset: percentage
+    valid_percent_of_total: true
+
+  - name: bid_price_percent_total_diff
+    type: time_comparison
+    expression: (base.bid_price_percent_total - comparison.bid_price_percent_total)
+    requires: [bid_price_percent_total]
+
+  - name: bid_price_7day_rolling_avg
+    expression: AVG(bid_price)
+    window:
+      frame: RANGE BETWEEN INTERVAL 7 DAYS PRECEDING AND CURRENT ROW
+    requires:
+      - name: timestamp
+        time_grain: day
+      - name: bid_price
